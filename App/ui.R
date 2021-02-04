@@ -13,11 +13,19 @@ library(shiny)
 shinyUI(fluidPage(
 
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel("COVID-19 Canadian Vaccination Strategy"),
 
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
+            titlePanel("Strategy Settings"),
+            radioButtons("minimizationChoice", "Minimize", c("Deaths", "Cases")),
+            h3("Initial Active Cases"),
+            numericInput("originalVirusInfections", "Original Strain", 0),
+            numericInput("UKVirusInfections", "UK Strain", 0),
+            numericInput("southAfricaVirusInfections", "South African Strain", 0),
+            numericInput("BrazilVirusInfections", "Brazilian Strain", 0),
+            
             sliderInput("bins",
                         "Number of bins:",
                         min = 1,
