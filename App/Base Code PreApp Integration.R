@@ -193,51 +193,53 @@ for (currentTime in 1:time){
   covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "time" = currentTime)
   
   
-  ## Vaccination Plot
-  ggplot(data=vaccPop, aes(x=time, y=cumulativeVaccPop)) +
-    geom_line(col = "darkgreen")+
-    geom_point(col = "darkgreen")+
-    xlab("Week")+
-    ylab("Cumulative Vaccination")+
-    ggtitle("Cumulative Vaccinations Per Week")
-  
-  
-  #Cases Plots
-  ggplot(data=covidCases, aes(x=time, y=cumulativeCases)) +
-    geom_line(col = "blue")+
-    geom_point(col = "blue")+
-    xlab("Week")+
-    ylab("Cumulative Cases")+
-    ggtitle("Cumulative Cases Per Week")
-  
-  ggplot(data=covidCases, aes(x=time, y=newCases)) +
-    geom_line(col = "blue")+
-    geom_point(col = "blue")+
-    xlab("Week")+
-    ylab("New Cases")+
-    ggtitle("New Cases Per Week")
-  
-  ggplot(data=covidCases, aes(x=time, y=currentCases)) +
-    geom_line(col = "blue")+
-    geom_point(col = "blue")+
-    xlab("Week")+
-    ylab("Active Cases")+
-    ggtitle("Active Cases Per Week")
-  
- 
-   #deaths plots
-   ggplot(data=covidDeaths, aes(x=time, y=newDeaths)) +
-    geom_line(col = "red")+
-    geom_point(col = "red")+
-    xlab("Week")+
-    ylab("New Deaths")+
-    ggtitle("New Deaths Per Week")
-   
-  ggplot(data=covidDeaths, aes(x=time, y=cumulativeDeaths)) +
-    geom_line(col = "red")+
-    geom_point(col = "red")+
-    xlab("Week")+
-    ylab("Cumulative Deaths")+
-    ggtitle("Cumulative Deaths Per Week")
-
 }
+
+
+## Vaccination Plot
+ggplot(data=vaccPop, aes(x=time, y=cumulativeVaccPop)) +
+  geom_line(col = "darkgreen")+
+  geom_point(col = "darkgreen")+
+  xlab("Week")+
+  ylab("Cumulative Vaccination")+
+  ggtitle("Cumulative Vaccinations Per Week")
+
+
+#Cases Plots
+ggplot(data=covidCases, aes(x=time, y=cumulativeCases)) +
+  geom_line(col = "blue")+
+  geom_point(col = "blue")+
+  xlab("Week")+
+  ylab("Cumulative Cases")+
+  ggtitle("Cumulative Cases Per Week")
+
+ggplot(data=covidCases, aes(x=time, y=newCases)) +
+  geom_line(col = "blue")+
+  geom_point(col = "blue")+
+  xlab("Week")+
+  ylab("New Cases")+
+  ggtitle("New Cases Per Week")
+
+ggplot(data=covidCases, aes(x=time, y=currentCases)) +
+  geom_line(col = "blue")+
+  geom_point(col = "blue")+
+  xlab("Week")+
+  ylab("Active Cases")+
+  ggtitle("Active Cases Per Week")
+
+
+#deaths plots
+ggplot(data=covidDeaths, aes(x=time, y=newDeaths)) +
+  geom_line(col = "red")+
+  geom_point(col = "red")+
+  xlab("Week")+
+  ylab("New Deaths")+
+  ggtitle("New Deaths Per Week")
+
+ggplot(data=covidDeaths, aes(x=time, y=cumulativeDeaths)) +
+  geom_line(col = "red")+
+  geom_point(col = "red")+
+  xlab("Week")+
+  ylab("Cumulative Deaths")+
+  ggtitle("Cumulative Deaths Per Week")
+

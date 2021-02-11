@@ -21,23 +21,28 @@ shinyUI(fluidPage(
             titlePanel("Strategy Settings"),
             radioButtons("minimizationChoice", "Minimize", c("Deaths", "Cases")),
             
-            h3("Initial Active Cases"),
-            numericInput("originalVirusInfections", "SARS-CoV-2 (Original Strain)", 0),
+            h3("Initial Populations"),
+            numericInput("startingPop", "Total Population", 10000),
+            numericInput("originalVirusInfections", "SARS-CoV-2", 0),
             #unsure if i want to keep the variations
-            numericInput("UKVirusInfections", "SARS-CoV-2 variant B.1.1.7 (UK Strain)", 0),
-            numericInput("southAfricaVirusInfections", "SARS-CoV-2 variant B.1.351 (South African Strain)", 0),
+            #numericInput("UKVirusInfections", "SARS-CoV-2 variant B.1.1.7 (UK Strain)", 0),
+            #numericInput("southAfricaVirusInfections", "SARS-CoV-2 variant B.1.351 (South African Strain)", 0),
             
-            h3("Vaccines Administered per Unit Time"), #find out if you want per week or daily
-            numericInput("PfizerVac", "Pfizer", 0),
-            numericInput("ModernaVac", "Moderna", 0), 
+            h3("Vaccines Administered per Week"), #find out if you want per week or daily
+            numericInput("genericVac", "Vaccinations", 0),
+            #numericInput("PfizerVac", "Pfizer", 0),
+            #numericInput("ModernaVac", "Moderna", 0), 
             #add a conditional warning if specified vaccine doses will not cover the gen pop by Sept 30, 2021
             
             h3("Strategy"),
             selectInput("strat", "Priority Vaccination", 
-                        c("Older Generations", "Frontline Workers", "Marginalized Populations", 
-                          "Highest Population Density", "Random")),
+                        c("High Population Density", "Oldest to Youngest", "Youngest to Oldest", 
+                          "Random")),
             radioButtons("doses", "Number of Doses", c("1", "2")),
-            numericInput("alreadyVac", "Number of People Already Vaccinated", 0),
+            #numericInput("alreadyVac", "Number of People Already Vaccinated", 0),
+            
+            h3("Simulation Length"),
+            numericInput("iter", "Iterations", 5)
             
         ),
 
