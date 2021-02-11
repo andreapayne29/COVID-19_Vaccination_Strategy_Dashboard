@@ -48,11 +48,12 @@ shinyUI(fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-            tabsetPanel(tabPanel("Projected New Cases", tableOutput("popMatrix")),
+            tabsetPanel(tabPanel("Projected New Cases", htmlOutput("casesText")),
                         tabPanel("Projected Deaths", textOutput("deathText")),
                         tabPanel("Vaccinated Individuals", textOutput("vaccText")),
                         tabPanel("Visualization", textOutput("mapsText")),
-                        tabPanel("Data Manipulation and Limitations", htmlOutput("dataLimText")), 
+                        tabPanel("Data Manipulation and Limitations", htmlOutput("dataLimText")),
+                        tabPanel("Projected New Cases", tableOutput("vaccMatrix")),
                         tabPanel("Author", textOutput("authorText")))
         )
     )

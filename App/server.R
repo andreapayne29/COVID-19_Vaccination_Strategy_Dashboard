@@ -49,17 +49,18 @@ shinyServer(function(input, output) {
         if(input$strat == "High Population Density"){
             1
         }
-        if(input$strat == "Oldest to Youngest"){
+        else if(input$strat == "Oldest to Youngest"){
             2
         }
-        if(input$strat == "Youngest to Oldest"){
+        else if(input$strat == "Youngest to Oldest"){
             3
         }
-        if(input$strat == "Random"){
+        else if(input$strat == "Random"){
             0
         }
     })
     # 
+    observe({print(priorityType())})
     doses = reactive({as.numeric(input$doses)})
     vaccPerTime = reactive({input$genericVac})
     
@@ -71,7 +72,7 @@ shinyServer(function(input, output) {
     set.seed(29)
     populationMatrix = reactive({
         tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop()) %>%
-            mutate(PersonID = c(1:startingPop()), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop(), 1, 0.15), Age = round(runif(startingPop(), min = 1, max = 10)), LTC = 0, VaccineType = 0, Suspeptibility = 1)})
+            mutate(PersonID = c(1:startingPop()), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop(), 1, 0.15), Age = round(runif(startingPop(), min = 1, max = 10)), LTC = 0, VaccineType = 0, Suseptibility = 1)})
     output$popMatrix <- renderTable(populationMatrix())
     ### Vaccinated - 0 none
     ###             1 one dose
@@ -98,15 +99,43 @@ shinyServer(function(input, output) {
     ###               0.05, two dose pfizer (95% eff)
     ###               0.059, two dose moderna (95% eff)
     
+    
+    #### Plotting Tables
     vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "time"= NA) %>% remove_missing(na.rm = TRUE)
     covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
     covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
     
 
     
+    ### Establishing vaccination order 
+    vaccinationOrderMatrix <- reactive({
+        if(priorityType() == 0){ #random
+            populationMatrix() %>% filter(Vaccinated == 0) %>% 
+                mutate(VaccOrder = sample(PersonID, startingPop())) %>% 
+                arrange(VaccOrder)
+        }
+    
+        else if(priorityType() == 1){ #pop density
+            populationMatrix() %>% filter(Vaccinated == 0) %>% 
+                arrange(desc(PopDensity)) %>% 
+                mutate(vaccOrder = c(1:startingPop()))
+        }
+    
+        else if(priorityType() == 2){ #oldest first
+            populationMatrix %>% filter(Vaccinated == 0) %>% 
+                arrange(desc(Age)) %>% 
+                mutate(vaccOrder = c(1:startingPop()))
+        }
+    
+        else if(priorityType() == 3){ #youngest first
+            populationMatrix %>% filter(Vaccinated == 0) %>% 
+                arrange(Age) %>% 
+                mutate(vaccOrder = c(1:startingPop()))
+        }
+    })
     
     
-    
+    output$vaccMatrix <- renderTable(vaccinationOrderMatrix())
     
     
     
