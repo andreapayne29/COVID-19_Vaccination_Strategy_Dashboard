@@ -48,7 +48,7 @@ shinyUI(fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-            tabsetPanel(tabPanel("Projected New Cases", htmlOutput("casesText")),
+            tabsetPanel(tabPanel("Projected New Cases", tableOutput("popMatrix")),
                         tabPanel("Projected Deaths", textOutput("deathText")),
                         tabPanel("Vaccinated Individuals", textOutput("vaccText")),
                         tabPanel("Visualization", textOutput("mapsText")),

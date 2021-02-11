@@ -45,21 +45,23 @@ shinyServer(function(input, output) {
     startingCases = reactive({input$originalVirusInfections})
     time = reactive({input$iter})
     
-    # if(input$strat == "High Population Density"){
-    #     priorityType = 1
-    # }
-    # if(input$strat == "Oldest to Youngest"){
-    #     priorityType = 2
-    # }
-    # if(input$strat == "Youngest to Oldest"){
-    #     priorityType = 3
-    # }
-    # if(input$strat == "Random"){
-    #     priorityType = 0
-    # }
+    priorityType <- reactive({
+        if(input$strat == "High Population Density"){
+            1
+        }
+        if(input$strat == "Oldest to Youngest"){
+            2
+        }
+        if(input$strat == "Youngest to Oldest"){
+            3
+        }
+        if(input$strat == "Random"){
+            0
+        }
+    })
     # 
-    # doses = as.numeric(input$doses)
-    # vaccPerTime = input$genericVac
+    doses = reactive({as.numeric(input$doses)})
+    vaccPerTime = reactive({input$genericVac})
     
     
     ### Setting constants
@@ -67,8 +69,10 @@ shinyServer(function(input, output) {
     deathProbability = 6538/279472 #ontario death data as of Monday Feb 8th
     
     set.seed(29)
-    
-    populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = as.numeric(startingPop()))
+    populationMatrix = reactive({
+        tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop()) %>%
+            mutate(PersonID = c(1:startingPop()), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop(), 1, 0.15), Age = round(runif(startingPop(), min = 1, max = 10)), LTC = 0, VaccineType = 0, Suspeptibility = 1)})
+    output$popMatrix <- renderTable(populationMatrix())
     ### Vaccinated - 0 none
     ###             1 one dose
     ###             2 one dose
@@ -93,16 +97,6 @@ shinyServer(function(input, output) {
     ###               0.198, one dose of moderna (1 does has 80.2% efficacy)
     ###               0.05, two dose pfizer (95% eff)
     ###               0.059, two dose moderna (95% eff)
-    
-    ### Populating
-    populationMatrix$PersonID = c(1:startingPop)
-    populationMatrix$Vaccinated = 0
-    populationMatrix$Status = 0
-    populationMatrix$PopDensity = rbinom(startingPop, 1, 0.15)
-    populationMatrix$Age = round(runif(startingPop, min = 1, max = 10))
-    populationMatrix$LTC = 0
-    populationMatrix$VaccineType = 0
-    populationMatrix$Suseptibility = 1
     
     vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "time"= NA) %>% remove_missing(na.rm = TRUE)
     covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)

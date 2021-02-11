@@ -61,7 +61,7 @@ populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "Po
 ###               0.059, two dose moderna (95% eff)
 
 ### Populating
-populationMatrix$PersonID = c(1:startingPop)
+populationMatrix$PersonID = c(1:nrow(populationMatrix))
 populationMatrix$Vaccinated = 0
 populationMatrix$Status = 0
 populationMatrix$PopDensity = rbinom(startingPop, 1, 0.15)
