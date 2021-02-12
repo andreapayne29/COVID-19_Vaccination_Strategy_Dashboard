@@ -11,6 +11,7 @@ shinyServer(function(input, output) {
     hideTab("tabs", "2")
     hideTab("tabs", "3")
     hideTab("tabs", "4")
+    hideTab("tabs", "6")
     
 
     #################### Accessing Data and Cleaning
@@ -306,21 +307,45 @@ shinyServer(function(input, output) {
            mutate("Difference" = `No Vaccination` - Vaccination)
     rownames(caseComparison) <- c("Cases", "Deaths")
          
-        
+    populationCounts = tibble("Eligible Population" = NA, "16-19 yr olds" = NA, "20-29 yr olds" = NA, "30-39 yr olds" = NA,
+                              "40-49 yr olds" = NA, "50-59 yr olds" = NA, "60-69 yr olds" = NA, 
+                              "70-79 yr olds" = NA, "80-89 yr olds" = NA, "90-99 yr olds" = NA,
+                              "100+ yr olds" = NA, "High Population Density" = NA,
+                              .rows = 1)
+    populationVector = c()
+    for(i in 1:10){
+        populationVector = c(populationVector, as.numeric(tally(populationMatrix %>% filter(Age == i))))
+    }
+    populationCounts$`Eligible Population` = populationData$eligiblePopulation
+    populationCounts$`16-19 yr olds` = populationVector[1]
+    populationCounts$`20-29 yr olds` = populationVector[2]
+    populationCounts$`30-39 yr olds` = populationVector[3]
+    populationCounts$`40-49 yr olds` = populationVector[4]
+    populationCounts$`50-59 yr olds` = populationVector[5]
+    populationCounts$`60-69 yr olds` = populationVector[6]
+    populationCounts$`70-79 yr olds` = populationVector[7]
+    populationCounts$`80-89 yr olds` = populationVector[8]
+    populationCounts$`90-99 yr olds` = populationVector[9]
+    populationCounts$`100+ yr olds` = populationVector[10]
+    populationCounts$`High Population Density` = as.numeric(tally(populationMatrix %>% filter(PopDensity == 1)))
+    
     
     values$populationMatrix = populationMatrix
     values$covidCases = covidCases
     values$covidDeaths = covidDeaths
     values$vaccPop = vaccPop
     values$caseComparison = caseComparison
+    values$populationCounts = populationCounts
     showTab("tabs", "1")
     showTab("tabs", "2")
     showTab("tabs", "3")
     showTab("tabs", "4")
+    showTab("tabs", "6")
     })
     
     
     output$vaccMatrix <- renderTable(values$caseComparison, rownames = TRUE)
+    output$populationTable <- renderTable(values$populationCounts)
     
     
     #### CASES PLOTS
@@ -389,25 +414,33 @@ shinyServer(function(input, output) {
     })
     
     
-    output$casesText <- renderUI({HTML(paste("Here will be a time series plot of new cases 
-                                   from vaccination start to Sept 30, 2021. There 
-                                   will also be a cumulative cases plot and some 
-                                   text detailing the number of new cases from beginning to Sept 30, 2021.",
-                   "Sidebar Note: Unsure if there is enough info about the variation strains to include them",sep ="<br/>"))})
-    output$deathText <- renderText("This tab is the exact same as the Projected Cases tab except with deaths.")
-    output$vaccText <- renderText("Another time series plot along with a table of fully and partially vaccinated 
-                                  individuals. One plot details 2 dose individuals and the partial is 1 dose individuals.")
-    output$mapsText <- renderText("Map visualizations")
-    output$dataLimText <- renderUI({HTML(paste("Any and all data manipulation, limitations, and assumptions are here. Data credit will also be provided.",
-                                     "Current Data Credit: variation names from CNN https://www.cnn.com/2021/02/02/health/variant-mutation-e484k/index.html.",
-                                     "Current known limitations:",
-                                     "0-15 yr olds cannot be vaccinated by either vaccine 
-                                     and 16-17 yr olds can only be vaccinated with Pfizer. Census population data groups 15 
-                                     yr olds with 16-19 yr olds and that data must be divided appropriately.
-                                     Governmnet organizations never specify who the 'general population' is, 
-                                     current solution: subtract healthcare workforce from total adult population.", sep = "<br/>"))})
-    output$authorText <- renderText("Little blurb about me with photo and links to linkedin and github")
     
+    output$dataLimText <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies 
+    with the ultimate goal of reducing the number of COVID-19 cases across the province. The initial values in the sidebar are scaled to Ontario's current situation.",
+                                               "As of February 8th, Ontario had 279,472 COVID-19 cumulative cases, 6,538 deaths, and are predicting the delivery of 27,300 vaccine doses for the week of Feb. 8 - Feb. 14.",
+                                               
+                                               h3("Methods"), "The population for this dashboard is simulated based on the demographics in Ontario. The ages in the simulation are randomly assigned based on the percentage breakdown of ages in Ontario. 'High Population Density' was assigned using a binomial distribution and the probability was calculated using the percentage of Ontarians who live in Toronto and Mississauga.",
+                                               "As for the spread of COVID-19, Ontario's median effective reproduction number (Re = 1.05) was utilized. Re is the number of people one sick individual can be expected to infect. Since a COVID-19 infection, to the best of our knowledge, lasts 2 weeks on average, this Re values was divided by two to account of the weekly nature of the simulation. This 0.5Re value was used to simulate infections 
+using a Poisson distribution with 0.5Re*(current Active Cases) as the rate. Anyone who is currently well is susceptible, including those vaccianted, has the potenial to be exposed and which people are exposed is done randomly via a sample. To determine if this exposure results in an infection, a binomial distribution is run with probability equal to 1 minus the efficiacy of any vaccine they may have gotten. Deaths 
+are also calcuated with a binomal distribution, where the death probability was calculated by dividing Ontario's actual deaths by the actual cumulative cases. Determining which individual dies is done via a sample of all active cases. This current dashboard is built using Pfizer's vaccine exclusively which has a one dose efficacy of 52% and a two dose efficacy of 95%, according to the BBC.", strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, then it is random.", 
+                                               strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are done oldest to youngest or youngest to oldest", strong("Random Vaccination Strategy:"), "The order is determined by a full sample.", 
+                                               h3("Limitations"), "Currently, this dashboard only takes the Pfizer vaccine into account, as it has less age restrictions as the Moderna vaccine. The Pfizer vaccine has been approved for ages 16 and up whereas the Moderna vaccine has only been approved for 18+. 
+This also causes some minor limitations as census population data is collected in 5 year sections, where late teens (15-19) are grouped together. To account for this, the late teens group was multiplied by 4/5 to elimiate the 15 year olds.",
+                                               
+                                               h3("Sources"), "Ontario's COVID-19 figures were retrieved on Feb. 8, 2021 from Public Health Ontario's COVID-19 Data Tool and vaccine delivery schedule was reteived from the Government of Canada's Vaccines and Treatments for COVID-19: Vaccine Rollout webpage.", "Ontario's Re value was retrived from Ontario's Open Data Catalouge on Feb. 8th.",  "The population data was retrieved from the 2016 Canadian Census via the CensusMapper API.", 
+                                               "The population density metric was based on the percentage of the population living in Toronto and Mississauga. These cities were chosen as they were noted by a study done by the Fraser Institute for having the highest population density in Ontario, as reported on by Global News in 2018. The population figures for these cities come from their respective municipal websites.", "Vaccine efficacy data was retrieve from the BBC.",
+                                               "", "", strong("References"), "",
+                                               "CensusMapper. (2016). 2016 Canada Census [Data file]. Retrieved from https://censusmapper.ca/api.", 
+                                               "City of Toronto. (n.d.). Toronto at a glance. Retrieved February 12, 2021, from https://www.toronto.ca/city-government/data-research-maps/toronto-at-a-glance/",
+                                               "Government of Canada. (2021, February 05). Vaccines and treatments for COVID-19: Vaccine rollout. Retrieved February 08, 2021, from https://www.canada.ca/en/public-health/services/diseases/2019-novel-coronavirus-infection/prevention-risks/covid-19-vaccine-treatment/vaccine-rollout.html#a4", 
+                                               "Region of Peel. (n.d.). Population Change. Retrieved February 12, 2021, from https://www.peelregion.ca/finance/economic-indicators/population-change.asp", 
+                                               "Ontario COVID-19 data tool. (2021). Retrieved February 08, 2021, from https://www.publichealthontario.ca/en/data-and-analysis/infectious-disease/covid-19-data-surveillance/covid-19-data-tool?tab=summary", 
+                                               "Ontario Data Catalogue. (2021). Effective Reproduction Number (Re) [Data file]. Retrieved from https://data.ontario.ca/dataset/effective-reproduction-number-re-for-covid-19-in-ontario/resource/1ffdf824-2712-4f64-b7fc-f8b2509f9204.", 
+                                               "Vella, E. (2018, January 10). Population density in Toronto significantly less compared to other major cities: Fraser Institute. Retrieved February 12, 2021, from https://globalnews.ca/news/3954609/population-density-in-toronto-fraser-institute/", "", "",
+                                               
+                                               
+                                               sep = "<br/>"))})
+
     
     
     

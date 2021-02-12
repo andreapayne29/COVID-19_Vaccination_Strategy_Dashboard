@@ -55,8 +55,9 @@ shinyUI(fluidPage(
                         tabPanel("Projected Deaths", verticalLayout(plotlyOutput("newDeathsPlot"), plotlyOutput("cumulativeDeathsPlot")), value = 2),
                         tabPanel("Vaccinated Individuals", verticalLayout(plotlyOutput("vaccinationPlot")), value = 3),
                         tabPanel("Strategy Effectiveness", tableOutput("vaccMatrix"), value = 4),
+                        tabPanel("Population Breakdowns", tableOutput("populationTable"), value = 6),
                         tabPanel("Data Manipulation and Limitations", htmlOutput("dataLimText"), value = 5),
-                        tabPanel("Author", textOutput("authorText"), value = 7)
+                        tabPanel("Author",source("about.R")$value(), value = 7)
                 )
             
         )
