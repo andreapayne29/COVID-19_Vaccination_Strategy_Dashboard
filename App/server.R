@@ -119,11 +119,11 @@ shinyServer(function(input, output) {
     
     
         #### Plotting Tables
-        vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "time"= NA) %>% remove_missing(na.rm = TRUE)
-        covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
-        covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
-        covidCasesNoVacc = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
-        covidDeathsNoVacc = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
+        vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "week"= NA) %>% remove_missing(na.rm = TRUE)
+        covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
+        covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
+        covidCasesNoVacc = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
+        covidDeathsNoVacc = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
         
 
     
@@ -256,7 +256,7 @@ shinyServer(function(input, output) {
          
          ## Updating vaccination tables
          cumulativeVaccinations = as.numeric(count(populationMatrix %>% filter(VaccineType!=0)))
-         vaccPop = vaccPop %>% add_row("newVaccinatedPop" = vaccPerTime, "cumulativeVaccPop" = cumulativeVaccinations, "time" = currentTime)
+         vaccPop = vaccPop %>% add_row("newVaccinatedPop" = vaccPerTime, "cumulativeVaccPop" = cumulativeVaccinations, "week" = currentTime)
          
          newCasesINT = as.numeric(count(populationMatrix %>% filter(Status == 1)))
          activeCases = as.numeric(count(populationMatrix %>% filter(Status == 1 | Status == 2)))
@@ -265,7 +265,7 @@ shinyServer(function(input, output) {
          }  else{
              cumulativeCases = as.numeric(covidCases$cumulativeCases[currentTime-1])+newCasesINT
          }
-         covidCases = covidCases %>% add_row("newCases" = newCasesINT, "currentCases" = activeCases, "cumulativeCases" = cumulativeCases, "time" = currentTime)
+         covidCases = covidCases %>% add_row("newCases" = newCasesINT, "currentCases" = activeCases, "cumulativeCases" = cumulativeCases, "week" = currentTime)
          
          
          if(currentTime == 1){
@@ -275,7 +275,7 @@ shinyServer(function(input, output) {
          }
          deaths = populationMatrix %>% filter(Status == 3)
          cumulativeDeathsINT = as.numeric(count(deaths))
-         covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "time" = currentTime)
+         covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "week" = currentTime)
          
          
          
@@ -287,7 +287,7 @@ shinyServer(function(input, output) {
          }  else{
            noVaccCumulativeCases = as.numeric(covidCasesNoVacc$cumulativeCases[currentTime-1])+noVaccNewCasesINT
          }
-         covidCasesNoVacc = covidCasesNoVacc %>% add_row("newCases" = noVaccNewCasesINT, "currentCases" = noVaccActiveCases, "cumulativeCases" = noVaccCumulativeCases, "time" = currentTime)
+         covidCasesNoVacc = covidCasesNoVacc %>% add_row("newCases" = noVaccNewCasesINT, "currentCases" = noVaccActiveCases, "cumulativeCases" = noVaccCumulativeCases, "week" = currentTime)
 
 
          if(currentTime == 1){
@@ -297,9 +297,11 @@ shinyServer(function(input, output) {
          }
          noVaccDeaths = noVaccPopulationMatrix %>% filter(Status == 3)
          noVaccCumulativeDeathsINT = as.numeric(count(noVaccDeaths))
-         covidDeathsNoVacc = covidDeathsNoVacc %>% add_row("newDeaths" = noVaccNewDeathsINT, "cumulativeDeaths" = noVaccCumulativeDeathsINT, "time" = currentTime)
+         covidDeathsNoVacc = covidDeathsNoVacc %>% add_row("newDeaths" = noVaccNewDeathsINT, "cumulativeDeaths" = noVaccCumulativeDeathsINT, "week" = currentTime)
 
      }
+        
+        #### creating a table to compare the vacc scenario to nonvacc
     caseComparison = tibble("Vaccination" = NA, "No Vaccination" = NA, .rows = 2)
     caseComparison$Vaccination = c(covidCases$cumulativeCases[time], covidDeaths$cumulativeDeaths[time])
     caseComparison$`No Vaccination` = c(covidCasesNoVacc$cumulativeCases[time], covidDeathsNoVacc$cumulativeDeaths[time])
@@ -307,6 +309,9 @@ shinyServer(function(input, output) {
            mutate("Difference" = `No Vaccination` - Vaccination)
     rownames(caseComparison) <- c("Cases", "Deaths")
          
+    
+    
+    #### creating table to provide population counts
     populationCounts = tibble("Eligible Population" = NA, "16-19 yr olds" = NA, "20-29 yr olds" = NA, "30-39 yr olds" = NA,
                               "40-49 yr olds" = NA, "50-59 yr olds" = NA, "60-69 yr olds" = NA, 
                               "70-79 yr olds" = NA, "80-89 yr olds" = NA, "90-99 yr olds" = NA,
@@ -329,7 +334,7 @@ shinyServer(function(input, output) {
     populationCounts$`100+ yr olds` = populationVector[10]
     populationCounts$`High Population Density` = as.numeric(tally(populationMatrix %>% filter(PopDensity == 1)))
     
-    
+    ### setting output reactive variables
     values$populationMatrix = populationMatrix
     values$covidCases = covidCases
     values$covidDeaths = covidDeaths
@@ -343,14 +348,14 @@ shinyServer(function(input, output) {
     showTab("tabs", "6")
     })
     
-    
+    #### TABLE OUTPUTS
     output$vaccMatrix <- renderTable(values$caseComparison, rownames = TRUE)
     output$populationTable <- renderTable(values$populationCounts)
     
     
     #### CASES PLOTS
     output$newCasesPlot <- renderPlotly({
-        plot = values$covidCases %>%  ggplot(aes(x=time, y=newCases)) +
+        plot = values$covidCases %>%  ggplot(aes(x=week, y=newCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
@@ -360,7 +365,7 @@ shinyServer(function(input, output) {
     })
     
     output$cumulativeCasesPlot <- renderPlotly({
-        plot = values$covidCases %>%  ggplot(aes(x=time, y=cumulativeCases)) +
+        plot = values$covidCases %>%  ggplot(aes(x=week, y=cumulativeCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
@@ -370,7 +375,7 @@ shinyServer(function(input, output) {
     })
     
     output$activeCasesPlot <- renderPlotly({
-        plot = values$covidCases %>%  ggplot(aes(x=time, y=currentCases)) +
+        plot = values$covidCases %>%  ggplot(aes(x=week, y=currentCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
@@ -382,7 +387,7 @@ shinyServer(function(input, output) {
     #### DEATH PLOTS
     
     output$newDeathsPlot <- renderPlotly({
-      plot = values$covidDeaths %>%  ggplot(aes(x=time, y=newDeaths)) +
+      plot = values$covidDeaths %>%  ggplot(aes(x=week, y=newDeaths)) +
         geom_line(col = "red")+
         geom_point(col = "red")+
         xlab("Week")+
@@ -392,7 +397,7 @@ shinyServer(function(input, output) {
     })
     
     output$cumulativeDeathsPlot <- renderPlotly({
-      plot = values$covidDeaths %>%  ggplot(aes(x=time, y=cumulativeDeaths)) +
+      plot = values$covidDeaths %>%  ggplot(aes(x=week, y=cumulativeDeaths)) +
         geom_line(col = "red")+
         geom_point(col = "red")+
         xlab("Week")+
@@ -404,7 +409,7 @@ shinyServer(function(input, output) {
     ### VACCINATION PLOTS
     
     output$vaccinationPlot <- renderPlotly({
-      plot = values$vaccPop %>% ggplot(aes(x=time, y=cumulativeVaccPop)) +
+      plot = values$vaccPop %>% ggplot(aes(x=week, y=cumulativeVaccPop)) +
         geom_line(col = "darkgreen")+
         geom_point(col = "darkgreen")+
         xlab("Week")+
