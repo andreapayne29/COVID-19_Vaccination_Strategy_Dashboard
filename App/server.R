@@ -1,7 +1,18 @@
 #Library Loading
+if(!require("shiny"))
+    install.packages("shiny")
 library(shiny)
+
+if(!require("tidyverse"))
+    install.packages("tidyverse")
 library(tidyverse)
+
+if(!require("cancensus"))
+    install.packages("cancensus")
 library(cancensus)
+
+if(!require("plotly"))
+    install.packages("plotly")
 library(plotly)
 
 
@@ -312,7 +323,7 @@ shinyServer(function(input, output) {
     
     
     #### creating table to provide population counts
-    populationCounts = tibble("Eligible Population" = NA, "16-19 yr olds" = NA, "20-29 yr olds" = NA, "30-39 yr olds" = NA,
+    populationCounts = tibble("Death Proportion in Ontario (%)" = NA, "Eligible Population" = NA, "16-19 yr olds" = NA, "20-29 yr olds" = NA, "30-39 yr olds" = NA,
                               "40-49 yr olds" = NA, "50-59 yr olds" = NA, "60-69 yr olds" = NA, 
                               "70-79 yr olds" = NA, "80-89 yr olds" = NA, "90-99 yr olds" = NA,
                               "100+ yr olds" = NA, "High Population Density" = NA,
@@ -321,6 +332,7 @@ shinyServer(function(input, output) {
     for(i in 1:10){
         populationVector = c(populationVector, as.numeric(tally(populationMatrix %>% filter(Age == i))))
     }
+    populationCounts$`Death Proportion in Ontario (%)` = deathProbability*100
     populationCounts$`Eligible Population` = populationData$eligiblePopulation
     populationCounts$`16-19 yr olds` = populationVector[1]
     populationCounts$`20-29 yr olds` = populationVector[2]
@@ -354,6 +366,8 @@ shinyServer(function(input, output) {
     
     
     #### CASES PLOTS
+    ## note on the first tab - it shows an error before showing up, just a byrpoduct of the hiding/showing of tabs
+    ## give it a few seconds to show up
     output$newCasesPlot <- renderPlotly({
         plot = values$covidCases %>%  ggplot(aes(x=week, y=newCases)) +
             geom_line(col = "blue")+
@@ -426,14 +440,14 @@ shinyServer(function(input, output) {
                                                
                                                h3("Methods"), "The population for this dashboard is simulated based on the demographics in Ontario. The ages in the simulation are randomly assigned based on the percentage breakdown of ages in Ontario. 'High Population Density' was assigned using a binomial distribution and the probability was calculated using the percentage of Ontarians who live in Toronto and Mississauga.",
                                                "As for the spread of COVID-19, Ontario's median effective reproduction number (Re = 1.05) was utilized. Re is the number of people one sick individual can be expected to infect. Since a COVID-19 infection, to the best of our knowledge, lasts 2 weeks on average, this Re values was divided by two to account of the weekly nature of the simulation. This 0.5Re value was used to simulate infections 
-using a Poisson distribution with 0.5Re*(current Active Cases) as the rate. Anyone who is currently well is susceptible, including those vaccianted, has the potenial to be exposed and which people are exposed is done randomly via a sample. To determine if this exposure results in an infection, a binomial distribution is run with probability equal to 1 minus the efficiacy of any vaccine they may have gotten. Deaths 
+using a Poisson distribution with 0.5Re*(current Active Cases) as the rate. Anyone who is currently well, including those vaccianted, has the potenial to be exposed and who is exposed is done randomly via a sample. To determine if this exposure results in an infection, a binomial distribution is run with probability equal to 1 minus the efficiacy of any vaccine they may have gotten. Deaths 
 are also calcuated with a binomal distribution, where the death probability was calculated by dividing Ontario's actual deaths by the actual cumulative cases. Determining which individual dies is done via a sample of all active cases. This current dashboard is built using Pfizer's vaccine exclusively which has a one dose efficacy of 52% and a two dose efficacy of 95%, according to the BBC.", strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, then it is random.", 
                                                strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are done oldest to youngest or youngest to oldest", strong("Random Vaccination Strategy:"), "The order is determined by a full sample.", 
                                                h3("Limitations"), "Currently, this dashboard only takes the Pfizer vaccine into account, as it has less age restrictions as the Moderna vaccine. The Pfizer vaccine has been approved for ages 16 and up whereas the Moderna vaccine has only been approved for 18+. 
-This also causes some minor limitations as census population data is collected in 5 year sections, where late teens (15-19) are grouped together. To account for this, the late teens group was multiplied by 4/5 to elimiate the 15 year olds.",
+This also causes some minor limitations as census population data is collected in 5 year sections, where late teens (15-19) are grouped together. To account for this, the late teens group was multiplied by 4/5 to elimiate the 15 year olds.", "There are also some limitations on the Re value used. This is a median of Ontario's total Re value, so it is the same for every infected person. This means we cannot take other factors into account that increase spread, like workplace industry or long term care homes.",
                                                
                                                h3("Sources"), "Ontario's COVID-19 figures were retrieved on Feb. 8, 2021 from Public Health Ontario's COVID-19 Data Tool and vaccine delivery schedule was reteived from the Government of Canada's Vaccines and Treatments for COVID-19: Vaccine Rollout webpage.", "Ontario's Re value was retrived from Ontario's Open Data Catalouge on Feb. 8th.",  "The population data was retrieved from the 2016 Canadian Census via the CensusMapper API.", 
-                                               "The population density metric was based on the percentage of the population living in Toronto and Mississauga. These cities were chosen as they were noted by a study done by the Fraser Institute for having the highest population density in Ontario, as reported on by Global News in 2018. The population figures for these cities come from their respective municipal websites.", "Vaccine efficacy data was retrieve from the BBC.",
+                                               "The population density metric was based on the percentage of the population living in Toronto and Mississauga. These cities were chosen as they were noted by a study done by the Fraser Institute for having the highest population density in Ontario, as reported on by Global News in 2018. The population figures for these cities come from their respective municipal websites.", "Vaccine efficacy data was retrieved from the BBC.",
                                                "", "", strong("References"), "",
                                                "CensusMapper. (2016). 2016 Canada Census [Data file]. Retrieved from https://censusmapper.ca/api.", 
                                                "City of Toronto. (n.d.). Toronto at a glance. Retrieved February 12, 2021, from https://www.toronto.ca/city-government/data-research-maps/toronto-at-a-glance/",

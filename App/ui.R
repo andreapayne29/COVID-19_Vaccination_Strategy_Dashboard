@@ -36,7 +36,8 @@ shinyUI(fluidPage(
         ),
 
         mainPanel(
-            
+                        ## note on the first tab - it shows an error before showing up, just a byrpoduct of the hiding/showing of tabs
+                        ## give it a few seconds to show up
                 tabsetPanel(id = "tabs",tabPanel("Projected Cases", verticalLayout(plotlyOutput("activeCasesPlot"), plotlyOutput("newCasesPlot"), plotlyOutput("cumulativeCasesPlot")), value = 1),
                         tabPanel("Projected Deaths", verticalLayout(plotlyOutput("newDeathsPlot"), plotlyOutput("cumulativeDeathsPlot")), value = 2),
                         tabPanel("Vaccinated Individuals", verticalLayout(plotlyOutput("vaccinationPlot")), value = 3),
