@@ -11,9 +11,6 @@ shinyServer(function(input, output) {
     hideTab("tabs", "2")
     hideTab("tabs", "3")
     hideTab("tabs", "4")
-    hideTab("tabs", "5")
-    hideTab("tabs", "6")
-    hideTab("tabs", "7")
     
 
     #################### Accessing Data and Cleaning
@@ -68,11 +65,32 @@ shinyServer(function(input, output) {
         ### Setting constants
         caseProbability = 279472/populationData$Population #ontario case data as of Monday Feb 8th 2021
         deathProbability = 6538/279472 #ontario death data as of Monday Feb 8th
-    
-        set.seed(29)
-        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop) %>%
-            mutate(PersonID = c(1:startingPop), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop, 1, 0.15), Age = round(runif(startingPop, min = 1, max = 10)), LTC = 0, VaccineType = 0, Suseptibility = 1)
+        highPopDensity = 3713811/populationData$Population #population of toronto and mississauga - see helper file
+        
+        ## determining age distributions
+        teenProb = round(startingPop*(populationData$Age16to19/populationData$eligiblePopulation))
+        twentyProb = round(startingPop*(populationData$Age20s/populationData$eligiblePopulation))
+        thirtiesProb = round(startingPop*(populationData$Age30s/populationData$eligiblePopulation))
+        fourtiesProb = round(startingPop*(populationData$Age40s/populationData$eligiblePopulation))
+        fiftiesProb = round(startingPop*(populationData$Age50s/populationData$eligiblePopulation))
+        sixtiesProb = round(startingPop*(populationData$Age60s/populationData$eligiblePopulation))
+        seventiesProb = round(startingPop*(populationData$Age70s/populationData$eligiblePopulation))
+        eightiesProb = round(startingPop*(populationData$Age80s/populationData$eligiblePopulation))
+        nintiesProb = round(startingPop*(populationData$Age90s/populationData$eligiblePopulation))
+        hundredsProb = round(startingPop*(populationData$Age100s/populationData$eligiblePopulation))
+        
+        ageVector = c(rep.int(1, teenProb), rep.int(2, twentyProb), rep.int(3, thirtiesProb), 
+                      rep.int(4, fourtiesProb), rep.int(5, fiftiesProb), rep.int(6, sixtiesProb), 
+                      rep.int(7, seventiesProb), rep.int(8, eightiesProb), rep.int(9, nintiesProb), 
+                      rep.int(10, hundredsProb))
 
+        ageVector = sample(ageVector, length(ageVector))
+        ageVector = ageVector[1:startingPop]
+
+        
+        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop) %>%
+            mutate(PersonID = c(1:startingPop), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop, 1, highPopDensity), Age = ageVector, LTC = 0, VaccineType = 0, Suseptibility = 1)
+        noVaccPopulationMatrix = populationMatrix
         ### Vaccinated - 0 none
         ###             1 one dose
         ###             2 one dose
@@ -103,7 +121,9 @@ shinyServer(function(input, output) {
         vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "time"= NA) %>% remove_missing(na.rm = TRUE)
         covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
         covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
-    
+        covidCasesNoVacc = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
+        covidDeathsNoVacc = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "time" = NA)%>% remove_missing(na.rm = TRUE)
+        
 
     
         ### Establishing vaccination order 
@@ -137,6 +157,12 @@ shinyServer(function(input, output) {
              populationMatrix = populationMatrix %>% mutate(Status = ifelse(test = PersonID %in% sample(susceptiblePopulation()$PersonID, startingCases), yes = 1, no = Status))
              
              
+             #no vaccination as control
+             noVaccSusceptiblePopulation = reactive({noVaccPopulationMatrix %>% filter(Status == 0)})
+             noVaccNewInfected = reactive({sample(noVaccSusceptiblePopulation()$PersonID, startingCases)})
+             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% sample(noVaccSusceptiblePopulation()$PersonID, startingCases), yes = 1, no = Status))
+             
+             
          }
          else{
              ### Infection Round
@@ -168,6 +194,38 @@ shinyServer(function(input, output) {
              
              populationMatrix = populationMatrix %>% mutate(Status = ifelse(test = PersonID %in% infectedIDs$PersonID, yes = 1, no = Status))
              
+             
+          ### NO VACC 
+             
+             ### Infection Round
+             noVaccCurrentCasesMatrix = noVaccPopulationMatrix %>% filter(Status == 1 | Status == 2)
+             noVaccCurrentCases = as.numeric(count(noVaccCurrentCasesMatrix))
+             
+             ## deaths
+             noVaccDeathsThisWeek = rbinom(1, noVaccCurrentCases, deathProbability)
+             noVaccNewDeaths = sample(currentCasesMatrix$PersonID, deathsThisWeek)
+             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccNewDeaths, yes = 3, no = Status))
+             
+             ## people get better
+             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
+                                                            Status = ifelse(test = Status == 1, yes = 2, no = Status))
+             
+             ## infected
+             noVaccInfectedThisWeek = rpois(1, lambda = 1.05*noVaccCurrentCases*(1/2)) #1.05 is ontario's median Re value
+             noVaccCurrentHealthy = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 0)))
+             if (noVaccInfectedThisWeek > noVaccCurrentHealthy){
+               noVaccInfectedThisWeek = noVaccCurrentHealthy
+             }
+             
+             
+             noVaccSusceptiblePopulation = noVaccPopulationMatrix %>% filter(Status == 0)
+             noVaccContactIDs= sample(noVaccSusceptiblePopulation$PersonID, noVaccInfectedThisWeek)
+             noVaccContactPopulation = noVaccPopulationMatrix %>% filter(PersonID %in% noVaccContactIDs) %>% 
+               mutate(Infected = rbinom(noVaccContactIDs, 1, Suseptibility))
+             noVaccInfectedIDs = noVaccContactPopulation %>% filter(Infected == 1)
+             
+             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccInfectedIDs$PersonID, yes = 1, no = Status))
+             
          }
          
          ### Vaccination Round - assumption 2nd dose does not impact weekly numbers
@@ -195,7 +253,7 @@ shinyServer(function(input, output) {
             }
          }
          
-         
+         ## Updating vaccination tables
          cumulativeVaccinations = as.numeric(count(populationMatrix %>% filter(VaccineType!=0)))
          vaccPop = vaccPop %>% add_row("newVaccinatedPop" = vaccPerTime, "cumulativeVaccPop" = cumulativeVaccinations, "time" = currentTime)
          
@@ -218,34 +276,62 @@ shinyServer(function(input, output) {
          cumulativeDeathsINT = as.numeric(count(deaths))
          covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "time" = currentTime)
          
-          
          
+         
+         ##Updating non vacc tables
+         noVaccNewCasesINT = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 1)))
+         noVaccActiveCases = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 1 | Status == 2)))
+         if(currentTime == 1){
+           noVaccCumulativeCases = noVaccNewCasesINT
+         }  else{
+           noVaccCumulativeCases = as.numeric(covidCasesNoVacc$cumulativeCases[currentTime-1])+noVaccNewCasesINT
+         }
+         covidCasesNoVacc = covidCasesNoVacc %>% add_row("newCases" = noVaccNewCasesINT, "currentCases" = noVaccActiveCases, "cumulativeCases" = noVaccCumulativeCases, "time" = currentTime)
+
+
+         if(currentTime == 1){
+           noVaccNewDeathsINT = 0
+         }  else{
+           noVaccNewDeathsINT= length(noVaccNewDeaths)
+         }
+         noVaccDeaths = noVaccPopulationMatrix %>% filter(Status == 3)
+         noVaccCumulativeDeathsINT = as.numeric(count(noVaccDeaths))
+         covidDeathsNoVacc = covidDeathsNoVacc %>% add_row("newDeaths" = noVaccNewDeathsINT, "cumulativeDeaths" = noVaccCumulativeDeathsINT, "time" = currentTime)
+
      }
-     
+    caseComparison = tibble("Vaccination" = NA, "No Vaccination" = NA, .rows = 2)
+    caseComparison$Vaccination = c(covidCases$cumulativeCases[time], covidDeaths$cumulativeDeaths[time])
+    caseComparison$`No Vaccination` = c(covidCasesNoVacc$cumulativeCases[time], covidDeathsNoVacc$cumulativeDeaths[time])
+    caseComparison = caseComparison %>%
+           mutate("Difference" = `No Vaccination` - Vaccination)
+    rownames(caseComparison) <- c("Cases", "Deaths")
+         
+        
     
     values$populationMatrix = populationMatrix
     values$covidCases = covidCases
     values$covidDeaths = covidDeaths
     values$vaccPop = vaccPop
+    values$caseComparison = caseComparison
     showTab("tabs", "1")
     showTab("tabs", "2")
     showTab("tabs", "3")
     showTab("tabs", "4")
-    showTab("tabs", "5")
-    showTab("tabs", "6")
-    showTab("tabs", "7")
     })
     
     
-    output$vaccMatrix <- renderTable(values$covidCases)
+    output$vaccMatrix <- renderTable(values$caseComparison, rownames = TRUE)
     
-    output$newCasesPlot <- renderPlot({
-        values$covidCases %>%  ggplot(aes(x=time, y=newCases)) +
+    
+    #### CASES PLOTS
+    output$newCasesPlot <- renderPlotly({
+        plot = values$covidCases %>%  ggplot(aes(x=time, y=newCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("New Cases")+
             ggtitle("New Cases Per Week")
+        ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
     output$cumulativeCasesPlot <- renderPlotly({
@@ -258,15 +344,49 @@ shinyServer(function(input, output) {
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
-    output$activeCasesPlot <- renderPlot({
-        values$covidCases %>%  ggplot(aes(x=time, y=currentCases)) +
+    output$activeCasesPlot <- renderPlotly({
+        plot = values$covidCases %>%  ggplot(aes(x=time, y=currentCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Active Cases")+
             ggtitle("Active Cases Per Week")
+        ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
+    #### DEATH PLOTS
+    
+    output$newDeathsPlot <- renderPlotly({
+      plot = values$covidDeaths %>%  ggplot(aes(x=time, y=newDeaths)) +
+        geom_line(col = "red")+
+        geom_point(col = "red")+
+        xlab("Week")+
+        ylab("New Deaths")+
+        ggtitle("New Deaths Per Week")
+      ggplotly(plot) %>% config(displayModeBar = FALSE)
+    })
+    
+    output$cumulativeDeathsPlot <- renderPlotly({
+      plot = values$covidDeaths %>%  ggplot(aes(x=time, y=cumulativeDeaths)) +
+        geom_line(col = "red")+
+        geom_point(col = "red")+
+        xlab("Week")+
+        ylab("Cumulative Deaths")+
+        ggtitle("Cumulative Deaths Per Week")
+      ggplotly(plot) %>% config(displayModeBar = FALSE)
+    })
+    
+    ### VACCINATION PLOTS
+    
+    output$vaccinationPlot <- renderPlotly({
+      plot = values$vaccPop %>% ggplot(aes(x=time, y=cumulativeVaccPop)) +
+        geom_line(col = "darkgreen")+
+        geom_point(col = "darkgreen")+
+        xlab("Week")+
+        ylab("Cumulative Vaccination")+
+        ggtitle("Cumulative Vaccinations Per Week")
+      ggplotly(plot) %>% config(displayModeBar = FALSE)
+    })
     
     
     output$casesText <- renderUI({HTML(paste("Here will be a time series plot of new cases 
