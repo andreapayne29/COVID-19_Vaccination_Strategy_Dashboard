@@ -8,6 +8,9 @@
 #
 
 library(shiny)
+library(plotly)
+library(tidyverse)
+
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -20,17 +23,17 @@ shinyUI(fluidPage(
         sidebarPanel(
             
             numericInput("startingPop", "Total Population", 100000),
-            numericInput("originalVirusInfections", "SARS-CoV-2 Current Infections", 2078),
+            numericInput("originalVirusInfections", "SARS-CoV-2 Initial Infections Percentage", 0.02078),
             
-            numericInput("genericVac", "Vaccinations Administered per Week", 203), #proportional to ontario's current numbers
+            numericInput("genericVac", "Pfizer Vaccines Administered per Week", 203), #proportional to ontario's current numbers
+            numericInput("modernaVac", "Moderna Vaccines Administered per Week", 501),
             
             selectInput("strat", "Priority Vaccination", 
                         c("High Population Density", "Oldest to Youngest", "Youngest to Oldest", 
                           "Random")),
             radioButtons("doses", "Number of Doses", c("1", "2")),
          
-            numericInput("iter", "Simulation Length (Iterations)", 26),
-            
+
             actionButton("submit", "Start Simulation")
             
         ),
@@ -38,10 +41,11 @@ shinyUI(fluidPage(
         mainPanel(
                         ## note on the first tab - it shows an error before showing up, just a byrpoduct of the hiding/showing of tabs
                         ## give it a few seconds to show up
-                tabsetPanel(id = "tabs",tabPanel("Projected Cases", verticalLayout(plotlyOutput("activeCasesPlot"), plotlyOutput("newCasesPlot"), plotlyOutput("cumulativeCasesPlot")), value = 1),
+                tabsetPanel(id = "tabs",
+                        tabPanel("Strategy Effectiveness", tableOutput("vaccMatrix"), value = 4),
+                        tabPanel("Projected Cases", verticalLayout(plotlyOutput("activeCasesPlot"), plotlyOutput("newCasesPlot"), plotlyOutput("cumulativeCasesPlot")), value = 1),
                         tabPanel("Projected Deaths", verticalLayout(plotlyOutput("newDeathsPlot"), plotlyOutput("cumulativeDeathsPlot")), value = 2),
                         tabPanel("Vaccinated Individuals", verticalLayout(plotlyOutput("vaccinationPlot")), value = 3),
-                        tabPanel("Strategy Effectiveness", tableOutput("vaccMatrix"), value = 4),
                         tabPanel("Population Breakdowns", tableOutput("populationTable"), value = 6),
                         tabPanel("Data Manipulation and Limitations", htmlOutput("dataLimText"), value = 5),
                         tabPanel("Author",source("about.R")$value(), value = 7)

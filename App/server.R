@@ -1,4 +1,9 @@
 #Library Loading
+
+if(!require("plotly"))
+  install.packages("plotly")
+library(plotly)
+
 if(!require("shiny"))
     install.packages("shiny")
 library(shiny)
@@ -11,9 +16,7 @@ if(!require("cancensus"))
     install.packages("cancensus")
 library(cancensus)
 
-if(!require("plotly"))
-    install.packages("plotly")
-library(plotly)
+
 
 
 shinyServer(function(input, output) {
@@ -26,22 +29,8 @@ shinyServer(function(input, output) {
     
 
     #################### Accessing Data and Cleaning
-    
-    ### Accessing Ontario census data 
-    options(cancensus.api_key='CensusMapper_d368730679bb25c2becf6fae8a73d5db')
-    options(cancensus.cache_path = "~/uni/4th year/stat5702/Census Data")
-    
-    census_data <- get_census(dataset='CA16', regions=list(PR="35"), 
-                              vectors=c("v_CA16_401","v_CA16_4", "v_CA16_64","v_CA16_82",
-                                        "v_CA16_100","v_CA16_118","v_CA16_136",
-                                        "v_CA16_154","v_CA16_172","v_CA16_190",
-                                        "v_CA16_208","v_CA16_226","v_CA16_247",
-                                        "v_CA16_265","v_CA16_283","v_CA16_301",
-                                        "v_CA16_322","v_CA16_340","v_CA16_358",
-                                        "v_CA16_376"), labels="detailed", 
-                              geo_format=NA, level='Regions')
-    
-    ### Cleaning Census Data
+
+    census_data = read_csv("Census Data/censusData.csv")
     populationData = census_data %>% rename(Age0to14 = `v_CA16_4: 0 to 14 years`, Age15to19 = `v_CA16_64: 15 to 19 years`,
                                             Age20to24 = `v_CA16_82: 20 to 24 years`, Age25to29 = `v_CA16_100: 25 to 29 years`, 
                                             Age30to34 = `v_CA16_118: 30 to 34 years`, Age35to39 = `v_CA16_136: 35 to 39 years`, 
@@ -68,13 +57,13 @@ shinyServer(function(input, output) {
         
         #### Setting User Inputs
         startingPop = input$startingPop
-        startingCases = input$originalVirusInfections
-        time = input$iter 
+        startingCases = round((input$originalVirusInfections)*startingPop)
         doses = as.numeric(input$doses)
         vaccPerTime = input$genericVac
     
     
         ### Setting constants
+        time = 31 #31 weeks between march 1st and Sept 30th
         caseProbability = 279472/populationData$Population #ontario case data as of Monday Feb 8th 2021
         deathProbability = 6538/279472 #ontario death data as of Monday Feb 8th
         highPopDensity = 3713811/populationData$Population #population of toronto and mississauga - see helper file
@@ -215,7 +204,7 @@ shinyServer(function(input, output) {
              
              ## deaths
              noVaccDeathsThisWeek = rbinom(1, noVaccCurrentCases, deathProbability)
-             noVaccNewDeaths = sample(currentCasesMatrix$PersonID, deathsThisWeek)
+             noVaccNewDeaths = sample(currentCasesMatrix$PersonID, noVaccDeathsThisWeek)
              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccNewDeaths, yes = 3, no = Status))
              
              ## people get better
@@ -333,7 +322,7 @@ shinyServer(function(input, output) {
         populationVector = c(populationVector, as.numeric(tally(populationMatrix %>% filter(Age == i))))
     }
     populationCounts$`Death Proportion in Ontario (%)` = deathProbability*100
-    populationCounts$`Eligible Population` = populationData$eligiblePopulation
+    populationCounts$`Eligible Population` = startingPop
     populationCounts$`16-19 yr olds` = populationVector[1]
     populationCounts$`20-29 yr olds` = populationVector[2]
     populationCounts$`30-39 yr olds` = populationVector[3]
@@ -374,7 +363,8 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("New Cases")+
-            ggtitle("New Cases Per Week")
+            ggtitle("New Cases Per Week")+
+          ylim(0, 3500)
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -384,7 +374,8 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Cumulative Cases")+
-            ggtitle("Cumulative Cases Per Week")
+            ggtitle("Cumulative Cases Per Week")+
+          ylim(0,85000)
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -394,7 +385,8 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Active Cases")+
-            ggtitle("Active Cases Per Week")
+            ggtitle("Active Cases Per Week") +
+          ylim(0,6500)
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -406,7 +398,8 @@ shinyServer(function(input, output) {
         geom_point(col = "red")+
         xlab("Week")+
         ylab("New Deaths")+
-        ggtitle("New Deaths Per Week")
+        ggtitle("New Deaths Per Week")+
+        ylim(0, 200)
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -416,7 +409,8 @@ shinyServer(function(input, output) {
         geom_point(col = "red")+
         xlab("Week")+
         ylab("Cumulative Deaths")+
-        ggtitle("Cumulative Deaths Per Week")
+        ggtitle("Cumulative Deaths Per Week")+
+        ylim(0, 3500)
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -428,7 +422,8 @@ shinyServer(function(input, output) {
         geom_point(col = "darkgreen")+
         xlab("Week")+
         ylab("Cumulative Vaccination")+
-        ggtitle("Cumulative Vaccinations Per Week")
+        ggtitle("Cumulative Vaccinations Per Week")+
+        ylim(0, input$startingPop)
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -438,13 +433,19 @@ shinyServer(function(input, output) {
     with the ultimate goal of reducing the number of COVID-19 cases across the province. The initial values in the sidebar are scaled to Ontario's current situation.",
                                                "As of February 8th, Ontario had 279,472 COVID-19 cumulative cases, 6,538 deaths, and are predicting the delivery of 27,300 vaccine doses for the week of Feb. 8 - Feb. 14.",
                                                
-                                               h3("Methods"), "The population for this dashboard is simulated based on the demographics in Ontario. The ages in the simulation are randomly assigned based on the percentage breakdown of ages in Ontario. 'High Population Density' was assigned using a binomial distribution and the probability was calculated using the percentage of Ontarians who live in Toronto and Mississauga.",
-                                               "As for the spread of COVID-19, Ontario's median effective reproduction number (Re = 1.05) was utilized. Re is the number of people one sick individual can be expected to infect. Since a COVID-19 infection, to the best of our knowledge, lasts 2 weeks on average, this Re values was divided by two to account of the weekly nature of the simulation. This 0.5Re value was used to simulate infections 
+                                               h3("Strategy Methods"),
+                                               "For the spread of COVID-19, Ontario's median effective reproduction number (<b>Re = 1.05</b>) was utilized. Re is the number of people one sick individual can be expected to infect. See below for caluclation methods.", "The population for this dashboard is simulated based on the demographics in Ontario. The ages in the simulation are randomly assigned based on the percentage breakdown of ages in Ontario. 'High Population Density' was assigned using a binomial distribution and the probability was calculated using the percentage of Ontarians who live in Toronto and Mississauga as they are the most densly populated cities in Ontario.",
+                                               strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, then it is random.", 
+                                               strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are done oldest to youngest or youngest to oldest", 
+                                               strong("Random Vaccination Strategy:"), "The order is determined by a full sample.", 
+                                               
+                                               h3("Calculation Methods"), "Since a COVID-19 infection, to the best of our knowledge, lasts 2 weeks on average, this Re values was divided by two to account of the weekly nature of the simulation. This 0.5Re value was used to simulate infections 
 using a Poisson distribution with 0.5Re*(current Active Cases) as the rate. Anyone who is currently well, including those vaccianted, has the potenial to be exposed and who is exposed is done randomly via a sample. To determine if this exposure results in an infection, a binomial distribution is run with probability equal to 1 minus the efficiacy of any vaccine they may have gotten. Deaths 
-are also calcuated with a binomal distribution, where the death probability was calculated by dividing Ontario's actual deaths by the actual cumulative cases. Determining which individual dies is done via a sample of all active cases. This current dashboard is built using Pfizer's vaccine exclusively which has a one dose efficacy of 52% and a two dose efficacy of 95%, according to the BBC.", strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, then it is random.", 
-                                               strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are done oldest to youngest or youngest to oldest", strong("Random Vaccination Strategy:"), "The order is determined by a full sample.", 
+are also calcuated with a binomal distribution, where the death probability was calculated by dividing Ontario's actual deaths by the actual cumulative cases. Determining which individual dies is done via a sample of all active cases. This current dashboard is built using Pfizer's vaccine exclusively which has a one dose efficacy of 52% and a two dose efficacy of 95%, according to the BBC.",
+                                               
                                                h3("Limitations"), "Currently, this dashboard only takes the Pfizer vaccine into account, as it has less age restrictions as the Moderna vaccine. The Pfizer vaccine has been approved for ages 16 and up whereas the Moderna vaccine has only been approved for 18+. 
 This also causes some minor limitations as census population data is collected in 5 year sections, where late teens (15-19) are grouped together. To account for this, the late teens group was multiplied by 4/5 to elimiate the 15 year olds.", "There are also some limitations on the Re value used. This is a median of Ontario's total Re value, so it is the same for every infected person. This means we cannot take other factors into account that increase spread, like workplace industry or long term care homes.",
+                                               
                                                
                                                h3("Sources"), "Ontario's COVID-19 figures were retrieved on Feb. 8, 2021 from Public Health Ontario's COVID-19 Data Tool and vaccine delivery schedule was reteived from the Government of Canada's Vaccines and Treatments for COVID-19: Vaccine Rollout webpage.", "Ontario's Re value was retrived from Ontario's Open Data Catalouge on Feb. 8th.",  "The population data was retrieved from the 2016 Canadian Census via the CensusMapper API.", 
                                                "The population density metric was based on the percentage of the population living in Toronto and Mississauga. These cities were chosen as they were noted by a study done by the Fraser Institute for having the highest population density in Ontario, as reported on by Global News in 2018. The population figures for these cities come from their respective municipal websites.", "Vaccine efficacy data was retrieved from the BBC.",
