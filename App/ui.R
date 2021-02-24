@@ -24,15 +24,13 @@ shinyUI(fluidPage(
             
             numericInput("originalVirusInfections", "SARS-CoV-2 Initial Infections Percentage", 0.02078),
             
-            numericInput("genericVac", "Pfizer Vaccines Administered per Week", 203), #proportional to ontario's current numbers
-            numericInput("modernaVac", "Moderna Vaccines Administered per Week", 501),
+            numericInput("genericVac", "Pfizer Vaccines Administered per Week", 4628), #proportional to ontario's current numbers
+            numericInput("modernaVac", "Moderna Vaccines Administered per Week", 1540),
             
             selectInput("strat", "Priority Vaccination", 
-                        c("High Population Density", "Oldest to Youngest", "Youngest to Oldest", 
-                          "Random")),
+                        c("Random", "High Population Density", "Oldest to Youngest", "Youngest to Oldest")),
             radioButtons("doses", "Number of Doses", c("1", "2")),
-         
-
+            useShinyalert(),
             actionButton("submit", "Start Simulation")
             
         ),
