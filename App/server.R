@@ -56,7 +56,7 @@ shinyServer(function(input, output) {
         
         
         #### Setting User Inputs
-        startingPop = input$startingPop
+        startingPop = 100000
         startingCases = round((input$originalVirusInfections)*startingPop)
         doses = as.numeric(input$doses)
         vaccPerTime = input$genericVac
@@ -423,14 +423,14 @@ shinyServer(function(input, output) {
         xlab("Week")+
         ylab("Cumulative Vaccination")+
         ggtitle("Cumulative Vaccinations Per Week")+
-        ylim(0, input$startingPop)
+        ylim(0, 100000)
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
     
     
     output$dataLimText <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies 
-    with the ultimate goal of reducing the number of COVID-19 cases across the province. The initial values in the sidebar are scaled to Ontario's current situation.",
+    with the ultimate goal of reducing the number of COVID-19 cases across the province. The initial values in the sidebar are scaled to 100,000 poeople using Ontario's current demographics and COVID-19 situation.",
                                                "As of February 8th, Ontario had 279,472 COVID-19 cumulative cases, 6,538 deaths, and are predicting the delivery of 27,300 vaccine doses for the week of Feb. 8 - Feb. 14.",
                                                
                                                h3("Strategy Methods"),

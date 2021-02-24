@@ -22,7 +22,6 @@ shinyUI(fluidPage(
     sidebarLayout(
         sidebarPanel(
             
-            numericInput("startingPop", "Total Population", 100000),
             numericInput("originalVirusInfections", "SARS-CoV-2 Initial Infections Percentage", 0.02078),
             
             numericInput("genericVac", "Pfizer Vaccines Administered per Week", 203), #proportional to ontario's current numbers
