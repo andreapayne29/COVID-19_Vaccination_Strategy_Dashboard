@@ -35,7 +35,7 @@ shinyServer(function(input, output) {
 
     #################### Accessing Data and Cleaning
 
-    census_data = read_csv("Census Data/censusData.csv")
+    census_data = read_csv("Data/censusData.csv")
     populationData = census_data %>% rename(Age0to14 = `v_CA16_4: 0 to 14 years`, Age15to19 = `v_CA16_64: 15 to 19 years`,
                                             Age20to24 = `v_CA16_82: 20 to 24 years`, Age25to29 = `v_CA16_100: 25 to 29 years`, 
                                             Age30to34 = `v_CA16_118: 30 to 34 years`, Age35to39 = `v_CA16_136: 35 to 39 years`, 
@@ -73,7 +73,14 @@ shinyServer(function(input, output) {
         time = 31 #31 weeks between march 1st and Sept 30th
         caseProbability = 279472/populationData$Population #ontario case data as of Monday Feb 8th 2021
         deathProbability = 6538/279472 #ontario death data as of Monday Feb 8th
-        highPopDensity = 3713811/populationData$Population #population of toronto and mississauga - see helper file
+        highPopDensity = (3713811/populationData$Population)*100000 #population of toronto and mississauga - see helper file
+        mediumPopDensity = (3534229/populationData$Population)*100000 #population of top 10 populated cities in Ontario (not incl toronto and mississauga - see helper file
+        lowPopDensity = ceiling(100000-highPopDensity-mediumPopDensity)
+        
+        highestRe = 1.19 # see helper function
+        middleRe = 1.045
+        lowestRe = 0.875
+        medianRe = 1.04
         
         ## determining age distributions
         teenProb = round(startingPop*(populationData$Age16to19/populationData$eligiblePopulation))
@@ -94,11 +101,19 @@ shinyServer(function(input, output) {
 
         ageVector = sample(ageVector, length(ageVector))
         ageVector = ageVector[1:(startingPop)]
-        teenageSplit = rbinom(teenProb, 1, 0.5)
+        teenageSplit = rbinom(teenProb, 1, 0.5) #for moderna vaccinations
         
-        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop) %>%
-            mutate(PersonID = c(1:startingPop), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop, 1, highPopDensity), Age = ageVector, LTC = 0, VaccineType = 0, Suseptibility = 1) %>%
+        populationDensityVector = c(rep.int(2, highPopDensity), rep.int(1, mediumPopDensity), rep.int(0, lowPopDensity))
+        populationDensityVector = sample(populationDensityVector, length(populationDensityVector))
+        
+        
+        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "VaccineType" = NA, "Suseptibility" = NA, "Re" = NA, .rows = startingPop) %>%
+            mutate(PersonID = c(1:startingPop), Vaccinated = 0, Status = 0, PopDensity = populationDensityVector, Age = ageVector, LTC = 0, VaccineType = 0, Suseptibility = 1) %>%
             mutate(ModernaEligible = ifelse(test = Age == 1, yes = teenageSplit, no = 1))
+        populationMatrix = populationMatrix %>% mutate(Re = ifelse(PopDensity == 2, yes = highestRe, no = Re)) %>% 
+          mutate(Re = ifelse(PopDensity == 1, yes = middleRe, no = Re)) %>%
+          mutate(Re = ifelse(PopDensity == 0, yes = lowestRe, no = Re))
+          
         noVaccPopulationMatrix = populationMatrix
         ### Vaccinated - 0 none
         ###             1 one dose
@@ -126,7 +141,7 @@ shinyServer(function(input, output) {
     
     
         #### Plotting Tables
-        vaccPop = tibble("newVaccinatedPop" = NA, "Total Vaccinations" = NA, "Pfizer Vaccinations" = NA, "Moderna Vaccinations" = NA, "week"= NA) %>% remove_missing(na.rm = TRUE)
+        vaccPop = tibble("newVaccinatedPop" = NA, "Total Vaccinations" = NA, "Pfizer Vaccinations" = NA, "Moderna Vaccinations" = NA, "Re" = NA, "week"= NA) %>% remove_missing(na.rm = TRUE)
         covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
         covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
         covidCasesNoVacc = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
@@ -174,6 +189,8 @@ shinyServer(function(input, output) {
          else{
              ### Infection Round
              currentCasesMatrix = populationMatrix %>% filter(Status == 1 | Status == 2)
+             reValue = mean(currentCasesMatrix$Re)
+             if(is.na(reValue)){reValue =0}
              currentCases = as.numeric(count(currentCasesMatrix))
              
              ## deaths
@@ -189,7 +206,7 @@ shinyServer(function(input, output) {
                                                             Status = ifelse(test = Status == 1, yes = 2, no = Status))
              
              ## infected
-             infectedThisWeek = rpois(1, lambda = 1.05*currentCases*(1/2)) #1.05 is ontario's median Re value
+             infectedThisWeek = rpois(1, lambda = reValue*currentCases*(1/2)) 
              currentHealthy = as.numeric(count(populationMatrix %>% filter(Status == 0)))
              if (infectedThisWeek > currentHealthy){
                  infectedThisWeek = currentHealthy
@@ -220,7 +237,10 @@ shinyServer(function(input, output) {
                                                             Status = ifelse(test = Status == 1, yes = 2, no = Status))
              
              ## infected
-             noVaccInfectedThisWeek = rpois(1, lambda = 1.05*noVaccCurrentCases*(1/2)) #1.05 is ontario's median Re value
+             reValueNoVacc = mean(noVaccCurrentCasesMatrix$Re)
+             if(is.na(reValueNoVacc)){reValue =0}
+             
+             noVaccInfectedThisWeek = rpois(1, lambda = reValueNoVacc*noVaccCurrentCases*(1/2)) 
              noVaccCurrentHealthy = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 0)))
              if (noVaccInfectedThisWeek > noVaccCurrentHealthy){
                noVaccInfectedThisWeek = noVaccCurrentHealthy

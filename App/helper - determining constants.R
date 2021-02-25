@@ -8,6 +8,18 @@ mississaugaPop = 757787
 
 ontariansLivingInHighPopDensity = torontoPop+mississaugaPop
 
+ottawaPop = 934243
+bramptonPop = 593638
+hamiltonPop = 536917
+londonPop = 383822
+markhamPop = 328966
+vaughanPop = 306233
+kitchenerPop = 233222
+windsorPop = 217188
+
+ontariansLivingInMediumPopDensity = ottawaPop +  bramptonPop + hamiltonPop + 
+  londonPop + markhamPop + vaughanPop + kitchenerPop + windsorPop
+
 
 ## scaling COVID constants to a 100,000 person population
 pfizerVaccinations = (512655/11078186)*100000  ## number of pfizer vaccines distributed on Feb 18th divided by Ontario's eligible population (found in server.R)
