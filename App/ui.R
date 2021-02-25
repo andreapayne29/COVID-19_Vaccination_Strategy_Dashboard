@@ -40,8 +40,8 @@ shinyUI(fluidPage(
                         ## give it a few seconds to show up
                 tabsetPanel(id = "tabs",
                         tabPanel("Strategy Effectiveness", tableOutput("vaccMatrix"), value = 4),
-                        tabPanel("Projected Cases", verticalLayout(plotlyOutput("activeCasesPlot"), plotlyOutput("newCasesPlot"), plotlyOutput("cumulativeCasesPlot")), value = 1),
-                        tabPanel("Projected Deaths", verticalLayout(plotlyOutput("newDeathsPlot"), plotlyOutput("cumulativeDeathsPlot")), value = 2),
+                        tabPanel("Projected Cases", verticalLayout(htmlOutput("casesText"),plotlyOutput("activeCasesPlot"), plotlyOutput("newCasesPlot"), plotlyOutput("cumulativeCasesPlot")), value = 1),
+                        tabPanel("Projected Deaths", verticalLayout(htmlOutput("deathsText"), plotlyOutput("newDeathsPlot"), plotlyOutput("cumulativeDeathsPlot")), value = 2),
                         tabPanel("Vaccinated Individuals", verticalLayout(plotlyOutput("vaccinationPlot")), value = 3),
                         tabPanel("Population Breakdowns", tableOutput("populationTable"), value = 6),
                         tabPanel("Data Manipulation and Limitations", htmlOutput("dataLimText"), value = 5),

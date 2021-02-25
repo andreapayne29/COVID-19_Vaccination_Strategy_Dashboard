@@ -166,9 +166,9 @@ shinyServer(function(input, output) {
              
              
              #no vaccination as control
-             noVaccSusceptiblePopulation = reactive({noVaccPopulationMatrix %>% filter(Status == 0)})
-             noVaccNewInfected = reactive({sample(noVaccSusceptiblePopulation()$PersonID, startingCases)})
-             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% sample(noVaccSusceptiblePopulation()$PersonID, startingCases), yes = 1, no = Status))
+             noVaccSusceptiblePopulation = noVaccPopulationMatrix %>% filter(Status == 0)
+             noVaccNewInfected = sample(noVaccSusceptiblePopulation$PersonID, startingCases)
+             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% sample(noVaccSusceptiblePopulation$PersonID, startingCases), yes = 1, no = Status))
              
              
          }
@@ -341,7 +341,7 @@ shinyServer(function(input, output) {
     caseComparison = caseComparison %>%
            mutate("Difference" = `No Vaccination` - Vaccination)
     rownames(caseComparison) <- c("Cases", "Deaths")
-         
+    
     
     
     #### creating table to provide population counts
@@ -374,6 +374,8 @@ shinyServer(function(input, output) {
     values$covidDeaths = covidDeaths
     values$vaccPop = vaccPop
     values$caseComparison = caseComparison
+    values$casesDifference = caseComparison$`Difference`[1]
+    values$deathsDifference = caseComparison$`Difference`[2]
     values$populationCounts = populationCounts
     showTab("tabs", "1")
     showTab("tabs", "2")
@@ -463,6 +465,8 @@ shinyServer(function(input, output) {
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
+    output$casesText <- renderUI({HTML(paste(h4(paste("Cases Prevented:", values$casesDifference)), " ", " "), sep = "<br/>" ) })
+    output$deathsText <- renderUI({HTML(paste(h4(paste("Deaths Prevented:", values$deathsDifference)), " ", " "), sep = "<br/>" ) })
     
     
     output$dataLimText <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies 
