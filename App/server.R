@@ -96,7 +96,7 @@ shinyServer(function(input, output) {
         ageVector = ageVector[1:(startingPop)]
         teenageSplit = rbinom(teenProb, 1, 0.5)
         
-        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "LTC" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop) %>%
+        populationMatrix = tibble("PersonID" = NA, "Vaccinated" = NA, "Status" = NA, "PopDensity" = NA, "Age" = NA, "VaccineType" = NA, "Suseptibility" = NA, .rows = startingPop) %>%
             mutate(PersonID = c(1:startingPop), Vaccinated = 0, Status = 0, PopDensity = rbinom(startingPop, 1, highPopDensity), Age = ageVector, LTC = 0, VaccineType = 0, Suseptibility = 1) %>%
             mutate(ModernaEligible = ifelse(test = Age == 1, yes = teenageSplit, no = 1))
         noVaccPopulationMatrix = populationMatrix
@@ -114,7 +114,6 @@ shinyServer(function(input, output) {
         ###
         ### Age - first digit of age (1 - teens, 2 - 20s etc)
         ###
-        ### LTC - indicator for LTC homes - 1 true/0 false
         ###
         ### Vaccine Type - 0 unvacc
         ###               1-4 pfizer (1, just vacc, 2 vacc last week, 3 vacc two weeks ago, 4 third weeks ago and now fully vaccinated)
