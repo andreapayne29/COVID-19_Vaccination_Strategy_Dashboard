@@ -127,7 +127,7 @@ shinyServer(function(input, output) {
     
     
         #### Plotting Tables
-        vaccPop = tibble("newVaccinatedPop" = NA, "cumulativeVaccPop" = NA, "week"= NA) %>% remove_missing(na.rm = TRUE)
+        vaccPop = tibble("newVaccinatedPop" = NA, "Total Vaccinations" = NA, "Pfizer Vaccinations" = NA, "Moderna Vaccinations" = NA, "week"= NA) %>% remove_missing(na.rm = TRUE)
         covidCases = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
         covidDeaths = tibble("newDeaths" = NA, "cumulativeDeaths" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
         covidCasesNoVacc = tibble("newCases" = NA, "currentCases" = NA, "cumulativeCases" = NA, "week" = NA)%>% remove_missing(na.rm = TRUE)
@@ -288,8 +288,14 @@ shinyServer(function(input, output) {
          
          ## Updating vaccination tables
          cumulativeVaccinations = as.numeric(count(populationMatrix %>% filter(VaccineType!=0)))
-         newVaccinations = as.numeric(count(populationMatrix%>% filter(VaccineType == 1 | VaccineType == 5)))
-         vaccPop = vaccPop %>% add_row("newVaccinatedPop" = newVaccinations, "cumulativeVaccPop" = cumulativeVaccinations, "week" = currentTime)
+         newPfizerVaccinations = as.numeric(count(populationMatrix%>% filter(VaccineType == 1)))
+         newModernaVaccinations = as.numeric(count(populationMatrix%>% filter(VaccineType == 5)))
+         
+         totalPfizerVaccinations = as.numeric(count(populationMatrix%>% filter(VaccineType == 1 | VaccineType == 2 | VaccineType == 3 | VaccineType == 4)))
+         totalModernaVaccinations = as.numeric(count(populationMatrix%>% filter(VaccineType == 5 | VaccineType == 6 | VaccineType == 7 | VaccineType == 8 | VaccineType == 9)))
+         
+         newVaccinations = newPfizerVaccinations + newModernaVaccinations
+         vaccPop = vaccPop %>% add_row("newVaccinatedPop" = newVaccinations, "Total Vaccinations" = cumulativeVaccinations, "Pfizer Vaccinations" = totalPfizerVaccinations, "Moderna Vaccinations" = totalModernaVaccinations,  "week" = currentTime)
          
          newCasesINT = as.numeric(count(populationMatrix %>% filter(Status == 1)))
          activeCases = as.numeric(count(populationMatrix %>% filter(Status == 1 | Status == 2)))
@@ -455,14 +461,39 @@ shinyServer(function(input, output) {
     ### VACCINATION PLOTS
     
     output$vaccinationPlot <- renderPlotly({
-      plot = values$vaccPop %>% ggplot(aes(x=week, y=cumulativeVaccPop)) +
-        geom_line(col = "darkgreen")+
-        geom_point(col = "darkgreen")+
-        xlab("Week")+
-        ylab("Cumulative Vaccination")+
-        ggtitle("Cumulative Vaccinations Per Week")+
-        ylim(0, 100000)
-      ggplotly(plot) %>% config(displayModeBar = FALSE)
+      
+      # vaccToPlot <- gather(values$vaccPop, key = measure, value = Vaccine, 
+      #              c("Total Vaccinations", "Pfizer Vaccinations", "Moderna Vaccinations"))
+      # 
+      # plot = ggplot(vaccToPlot, aes(x=week, y = Vaccine, group = measure, colour = measure)) + 
+      #   geom_line()+
+      #   ggtitle("Cumulative Vaccinations Per Week")+
+      #   ylim(0, 100000)+
+      #   xlab("Week")+
+      #   ylab("Cumulative Vaccination")+
+      #   ggtitle("Cumulative Vaccinations Per Week")
+      
+      colors <- c("Total Vaccinations" = "darkgreen", "Pfizer Vaccinations" = "red", "Moderna Vaccinations" = "blue")
+      
+      total_vaccinations = values$vaccPop$`Total Vaccinations`
+      pfizer_vaccinations = values$vaccPop$`Pfizer Vaccinations`
+      moderna_vaccinations = values$vaccPop$`Moderna Vaccinations`
+      
+      plot2 = values$vaccPop %>% ggplot(aes(x=week)) +
+        geom_line(aes(y=total_vaccinations, color = "Total Vaccinations"))+
+        geom_point(aes(y=total_vaccinations,color = "Total Vaccinations"))+
+        geom_line(aes(y=pfizer_vaccinations, color = "Pfizer Vaccinations"))+
+        geom_point(aes(y=pfizer_vaccinations,color = "Pfizer Vaccinations"))+
+        geom_line(aes(y=moderna_vaccinations, color = "Moderna Vaccinations"))+
+        geom_point(aes(y=moderna_vaccinations,color = "Moderna Vaccinations"))+
+        labs(
+          x = "Week",
+          y = "Cumulative Vaccinations",
+          color = "Legend")+
+        scale_color_manual(values = colors)
+      ggplotly(plot2) %>% config(displayModeBar = FALSE)
+      
+
     })
     
     output$casesText <- renderUI({HTML(paste(h4(paste("Cases Prevented:", values$casesDifference)), " ", " "), sep = "<br/>" ) })
