@@ -187,7 +187,7 @@ shinyServer(function(input, output) {
              
              
          }
-         else{
+         #else{
              ### Infection Round
              currentCasesMatrix = populationMatrix %>% filter(Status == 1 | Status == 2)
              reValue = mean(currentCasesMatrix$Re)
@@ -203,11 +203,14 @@ shinyServer(function(input, output) {
              populationMatrix = populationMatrix %>% mutate(Status = ifelse(test = PersonID %in% newDeaths, yes = 3, no = Status))
              
              ## people get better
-             populationMatrix = populationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
+             if(currentTime!=1){
+                populationMatrix = populationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
                                                             Status = ifelse(test = Status == 1, yes = 2, no = Status))
-             
+             }
              ## infected
+             
              infectedThisWeek = rpois(1, lambda = reValue*currentCases*(1/2)) 
+             if(currentTime == 1){infectedThisWeek = 0}
              currentHealthy = as.numeric(count(populationMatrix %>% filter(Status == 0)))
              if (infectedThisWeek > currentHealthy){
                  infectedThisWeek = currentHealthy
@@ -234,15 +237,18 @@ shinyServer(function(input, output) {
              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccNewDeaths, yes = 3, no = Status))
              
              ## people get better
-             noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
+             if(currentTime != 1){
+              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
                                                             Status = ifelse(test = Status == 1, yes = 2, no = Status))
-             
+             }
              ## infected
+             
              reValueNoVacc = mean(noVaccCurrentCasesMatrix$Re)
              if(is.na(reValueNoVacc)){reValue =0}
              
-             noVaccInfectedThisWeek = rpois(1, lambda = reValueNoVacc*noVaccCurrentCases*(1/2)) 
-             noVaccCurrentHealthy = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 0)))
+             noVaccInfectedThisWeek = rpois(1, lambda = reValueNoVacc*noVaccCurrentCases*(1/2))
+             if(currentTime == 1){noVaccInfectedThisWeek = 0}
+                noVaccCurrentHealthy = as.numeric(count(noVaccPopulationMatrix %>% filter(Status == 0)))
              if (noVaccInfectedThisWeek > noVaccCurrentHealthy){
                noVaccInfectedThisWeek = noVaccCurrentHealthy
              }
@@ -256,7 +262,7 @@ shinyServer(function(input, output) {
              
              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccInfectedIDs$PersonID, yes = 1, no = Status))
              
-         }
+         #}
          
          ### Vaccination Round - assumption 2nd dose does not impact weekly numbers
          # currently only built on Pfizer
@@ -327,11 +333,11 @@ shinyServer(function(input, output) {
          covidCases = covidCases %>% add_row("newCases" = newCasesINT, "currentCases" = activeCases, "cumulativeCases" = cumulativeCases, "week" = currentTime)
          
          
-         if(currentTime == 1){
-             newDeathsINT = 0
-         }  else{
+         #if(currentTime == 1){
+             #newDeathsINT = 0
+         #}  else{
              newDeathsINT= length(newDeaths)
-         }
+         #}
          deaths = populationMatrix %>% filter(Status == 3) 
          cumulativeDeathsINT = as.numeric(count(deaths)) + cumulativeDeathsPreSimulation
          covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "week" = currentTime)
@@ -349,11 +355,11 @@ shinyServer(function(input, output) {
          covidCasesNoVacc = covidCasesNoVacc %>% add_row("newCases" = noVaccNewCasesINT, "currentCases" = noVaccActiveCases, "cumulativeCases" = noVaccCumulativeCases, "week" = currentTime)
 
 
-         if(currentTime == 1){
-           noVaccNewDeathsINT = 0
-         }  else{
+         #if(currentTime == 1){
+           #noVaccNewDeathsINT = 0
+         #}  else{
            noVaccNewDeathsINT= length(noVaccNewDeaths)
-         }
+         #}
          noVaccDeaths = noVaccPopulationMatrix %>% filter(Status == 3)
          noVaccCumulativeDeathsINT = as.numeric(count(noVaccDeaths)) +cumulativeDeathsPreSimulation
          covidDeathsNoVacc = covidDeathsNoVacc %>% add_row("newDeaths" = noVaccNewDeathsINT, "cumulativeDeaths" = noVaccCumulativeDeathsINT, "week" = currentTime)
@@ -428,7 +434,7 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("New Cases")+
-            ggtitle("New Cases Per Week")
+            ggtitle("New Cases per 1M People")
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -438,7 +444,7 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Cumulative Cases")+
-            ggtitle("Cumulative Cases Per Week")
+            ggtitle("Cumulative Cases per 1M People")
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -448,7 +454,7 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Active Cases")+
-            ggtitle("Active Cases Per Week")
+            ggtitle("Active Cases per 1M People")
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -460,7 +466,7 @@ shinyServer(function(input, output) {
         geom_point(col = "red")+
         xlab("Week")+
         ylab("New Deaths")+
-        ggtitle("New Deaths Per Week")
+        ggtitle("New Deaths per 1M People")
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -470,7 +476,7 @@ shinyServer(function(input, output) {
         geom_point(col = "red")+
         xlab("Week")+
         ylab("Cumulative Deaths")+
-        ggtitle("Cumulative Deaths Per Week")
+        ggtitle("Cumulative Deaths per 1M People")
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -495,7 +501,8 @@ shinyServer(function(input, output) {
           x = "Week",
           y = "Cumulative Vaccinations",
           color = "Legend")+
-        scale_color_manual(values = colors)
+        scale_color_manual(values = colors) +
+        ggtitle("Cumulative Vaccinations per 1M People")
       ggplotly(plot2) %>% config(displayModeBar = FALSE)
       
 
@@ -505,8 +512,8 @@ shinyServer(function(input, output) {
     output$deathsText <- renderUI({HTML(paste(h4(paste("Deaths Prevented:", values$deathsDifference)), " ", " "), sep = "<br/>" ) })
     
     
-    output$introduction <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies running from March 1st to September 30th, 2021 (31 weeks), with the ultimate goal of reducing the number of COVID-19 cases across Ontario. This simulation has scaled Ontario’s population down to 1,000,000 while still maintaining the distribution of sociodemographic factors across the province.
-                                                The default value of COVID-19 infection percentage is reflective of Ontario’s current situation."," ","As of February 26, 2021, Ontario has 298,569 cumulative cases, 6,944 deaths, and 15,029 cases reported in the last 14 days. Based on forecasts from the Government of Canada, Ontario is expected to administer 186,030 Pfizer vaccines (16,792 per 1M people) and 47,400 Moderna vaccines (4,279 per 1M people) for the week of February 22, 2021.",
+    output$introduction <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies running from March 1st to September 30th, 2021 (31 weeks), with the ultimate goal of reducing the number of COVID-19 cases across Ontario.
+                                                The default value of Percentage of Population Currently Infected with COVID-19 reflectives of Ontario’s situation as of February 26, 2021."," ","As of February 26, 2021, Ontario has 298,569 cumulative cases, 6,944 deaths, and 15,029 cases reported in the last 14 days. Based on forecasts from the Government of Canada, Ontario is expected to administer 186,030 Pfizer vaccines (16,792 per 1M people) and 47,400 Moderna vaccines (4,279 per 1M people) for the week of February 22, 2021.",
                                                 h3("Strategy"), 
                                                 strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, suburban areas are second, and rural areas are third.", 
                                                 strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are administered oldest to youngest or youngest to oldest.", 
