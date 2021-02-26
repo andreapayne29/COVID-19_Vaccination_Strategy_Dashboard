@@ -1,19 +1,12 @@
 #Library Loading
 
-if(!require("plotly"))
-  install.packages("plotly")
+
 library(plotly)
 
-if(!require("shiny"))
-    install.packages("shiny")
 library(shiny)
 
-if(!require("shinyalert"))
-  install.packages("shinyalert")
 library(shinyalert)
 
-if(!require("tidyverse"))
-    install.packages("tidyverse")
 library(tidyverse)
 
 
