@@ -266,7 +266,6 @@ shinyServer(function(input, output) {
          
          
          ### Vaccination Round - assumption 2nd dose does not impact weekly numbers
-         # currently only built on Pfizer
          if((pfizerVaccPerTime+modernaVaccPerTime) !=0){
            
           
