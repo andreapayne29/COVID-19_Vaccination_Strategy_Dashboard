@@ -1,7 +1,7 @@
 function(){
   tabPanel("About",
-           HTML("<h1> Andrea Payne</h1>
-        <p> Andrea is a fourth year student at Carleton University in Ottawa, ON. She is currently working towards a Bachelor of Mathematics in Computational and Applied Mathematics and Statisics, with concentration in Applied Statistics and Probablility. For other instances of her work, please view her GitHub linked below.</p>"
+           HTML('<h1> Andrea Payne</h1>
+        <p> Andrea is a fourth year student at Carleton University in Ottawa, ON. She is currently working towards a Bachelor of Mathematics in Computational and Applied Mathematics and Statisics, with concentration in Applied Statistics and Probablility. For other instances of her work, please view her <a href="https://github.com/andreapayne29" target="_blank">GitHub.</a>'
            ),
            HTML('
         <div style="clear: left;">

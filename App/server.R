@@ -68,7 +68,8 @@ shinyServer(function(input, output) {
         cumulativeCasesPreSimulation = round(casesScaling*startingPop)
         
         deathProbability = 6944/298569 #ontario death data as of Fri Feb 26th 2021
-        cumulativeDeathsPreSimulation = round(deathProbability*startingPop)
+        deathScaling = 6944/populationData$Population
+        cumulativeDeathsPreSimulation = round(deathScaling*startingPop)
         
         highPopDensity = round((3713811/populationData$Population)*startingPop) #population of toronto and mississauga - see helper file
         mediumPopDensity = round((3534229/populationData$Population)*startingPop) #population of top 10 populated cities in Ontario (not incl toronto and mississauga) - see helper file
@@ -187,7 +188,7 @@ shinyServer(function(input, output) {
              
              
          }
-         #else{
+         
              ### Infection Round
              currentCasesMatrix = populationMatrix %>% filter(Status == 1 | Status == 2)
              reValue = mean(currentCasesMatrix$Re)
@@ -238,7 +239,7 @@ shinyServer(function(input, output) {
              
              ## people get better
              if(currentTime != 1){
-              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
+                noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = Status == 2, yes = 0, no = Status),
                                                             Status = ifelse(test = Status == 1, yes = 2, no = Status))
              }
              ## infected
@@ -262,7 +263,7 @@ shinyServer(function(input, output) {
              
              noVaccPopulationMatrix = noVaccPopulationMatrix %>% mutate(Status = ifelse(test = PersonID %in% noVaccInfectedIDs$PersonID, yes = 1, no = Status))
              
-         #}
+         
          
          ### Vaccination Round - assumption 2nd dose does not impact weekly numbers
          # currently only built on Pfizer
@@ -333,11 +334,8 @@ shinyServer(function(input, output) {
          covidCases = covidCases %>% add_row("newCases" = newCasesINT, "currentCases" = activeCases, "cumulativeCases" = cumulativeCases, "week" = currentTime)
          
          
-         #if(currentTime == 1){
-             #newDeathsINT = 0
-         #}  else{
-             newDeathsINT= length(newDeaths)
-         #}
+         
+         newDeathsINT= length(newDeaths)
          deaths = populationMatrix %>% filter(Status == 3) 
          cumulativeDeathsINT = as.numeric(count(deaths)) + cumulativeDeathsPreSimulation
          covidDeaths = covidDeaths %>% add_row("newDeaths" = newDeathsINT, "cumulativeDeaths" = cumulativeDeathsINT, "week" = currentTime)
@@ -355,11 +353,8 @@ shinyServer(function(input, output) {
          covidCasesNoVacc = covidCasesNoVacc %>% add_row("newCases" = noVaccNewCasesINT, "currentCases" = noVaccActiveCases, "cumulativeCases" = noVaccCumulativeCases, "week" = currentTime)
 
 
-         #if(currentTime == 1){
-           #noVaccNewDeathsINT = 0
-         #}  else{
-           noVaccNewDeathsINT= length(noVaccNewDeaths)
-         #}
+         
+         noVaccNewDeathsINT= length(noVaccNewDeaths)
          noVaccDeaths = noVaccPopulationMatrix %>% filter(Status == 3)
          noVaccCumulativeDeathsINT = as.numeric(count(noVaccDeaths)) +cumulativeDeathsPreSimulation
          covidDeathsNoVacc = covidDeathsNoVacc %>% add_row("newDeaths" = noVaccNewDeathsINT, "cumulativeDeaths" = noVaccCumulativeDeathsINT, "week" = currentTime)
@@ -367,11 +362,11 @@ shinyServer(function(input, output) {
      }
         
         #### creating a table to compare the vacc scenario to nonvacc
-    caseComparison = tibble("Vaccination" = NA, "No Vaccination" = NA, .rows = 2)
-    caseComparison$Vaccination = c(covidCases$cumulativeCases[time], covidDeaths$cumulativeDeaths[time])
-    caseComparison$`No Vaccination` = c(covidCasesNoVacc$cumulativeCases[time], covidDeathsNoVacc$cumulativeDeaths[time])
+    caseComparison = tibble("Vaccination (per 1M)" = NA, "No Vaccination (per 1M)" = NA, .rows = 2)
+    caseComparison$`Vaccination (per 1M)`= c(covidCases$cumulativeCases[time], covidDeaths$cumulativeDeaths[time])
+    caseComparison$`No Vaccination (per 1M)` = c(covidCasesNoVacc$cumulativeCases[time], covidDeathsNoVacc$cumulativeDeaths[time])
     caseComparison = caseComparison %>%
-           mutate("Difference" = `No Vaccination` - Vaccination)
+           mutate("Difference (per 1M)" = `No Vaccination (per 1M)` - `Vaccination (per 1M)`)
     rownames(caseComparison) <- c("Cases", "Deaths")
     
     
@@ -406,8 +401,8 @@ shinyServer(function(input, output) {
     values$covidDeaths = covidDeaths
     values$vaccPop = vaccPop
     values$caseComparison = caseComparison
-    values$casesDifference = caseComparison$`Difference`[1]
-    values$deathsDifference = caseComparison$`Difference`[2]
+    values$casesDifference = caseComparison$`Difference (per 1M)`[1]
+    values$deathsDifference = caseComparison$`Difference (per 1M)`[2]
     values$populationCounts = populationCounts
     showTab("tabs", "1")
     showTab("tabs", "2")
@@ -426,15 +421,15 @@ shinyServer(function(input, output) {
     
     
     #### CASES PLOTS
-    ## note on the first tab - it shows an error before showing up, just a byrpoduct of the hiding/showing of tabs
-    ## give it a few seconds to show up
+    
     output$newCasesPlot <- renderPlotly({
         plot = values$covidCases %>%  ggplot(aes(x=week, y=newCases)) +
             geom_line(col = "blue")+
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("New Cases")+
-            ggtitle("New Cases per 1M People")
+            ggtitle("New Cases per 1M People")+ 
+            expand_limits(y=0)
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -454,7 +449,8 @@ shinyServer(function(input, output) {
             geom_point(col = "blue")+
             xlab("Week")+
             ylab("Active Cases")+
-            ggtitle("Active Cases per 1M People")
+            ggtitle("Active Cases per 1M People")+
+            expand_limits(y=0)
         ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -466,7 +462,8 @@ shinyServer(function(input, output) {
         geom_point(col = "red")+
         xlab("Week")+
         ylab("New Deaths")+
-        ggtitle("New Deaths per 1M People")
+        ggtitle("New Deaths per 1M People")+
+        expand_limits(y=0)
       ggplotly(plot) %>% config(displayModeBar = FALSE)
     })
     
@@ -484,7 +481,7 @@ shinyServer(function(input, output) {
     
     output$vaccinationPlot <- renderPlotly({
       
-      colors <- c("Total Vaccinations" = "darkgreen", "Pfizer Vaccinations" = "red", "Moderna Vaccinations" = "blue")
+      colors <- c("Total Vaccinations" = "black", "Pfizer Vaccinations" = "red", "Moderna Vaccinations" = "blue")
       
       total_vaccinations = values$vaccPop$`Total Vaccinations`
       pfizer_vaccinations = values$vaccPop$`Pfizer Vaccinations`
@@ -502,18 +499,19 @@ shinyServer(function(input, output) {
           y = "Cumulative Vaccinations",
           color = "Legend")+
         scale_color_manual(values = colors) +
-        ggtitle("Cumulative Vaccinations per 1M People")
+        ggtitle("Cumulative Initial Dose Vaccinations per 1M People")+
+        expand_limits(y=0)
       ggplotly(plot2) %>% config(displayModeBar = FALSE)
       
 
     })
     
-    output$casesText <- renderUI({HTML(paste(h4(paste("Cases Prevented:", values$casesDifference)), " ", " "), sep = "<br/>" ) })
-    output$deathsText <- renderUI({HTML(paste(h4(paste("Deaths Prevented:", values$deathsDifference)), " ", " "), sep = "<br/>" ) })
+    output$casesText <- renderUI({HTML(paste(h4(paste("Cases Prevented (per 1M):", values$casesDifference)), " ", " "), sep = "<br/>" ) })
+    output$deathsText <- renderUI({HTML(paste(h4(paste("Deaths Prevented (per 1M):", values$deathsDifference)), " ", " "), sep = "<br/>" ) })
     
     
     output$introduction <- renderUI({HTML(paste(h3("Introduction"), "This dashboard intends to show the impact of different vaccination strategies running from March 1st to September 30th, 2021 (31 weeks), with the ultimate goal of reducing the number of COVID-19 cases across Ontario.
-                                                The default value of Percentage of Population Currently Infected with COVID-19 reflectives of Ontario’s situation as of February 26, 2021."," ","As of February 26, 2021, Ontario has 298,569 cumulative cases, 6,944 deaths, and 15,029 cases reported in the last 14 days. Based on forecasts from the Government of Canada, Ontario is expected to administer 186,030 Pfizer vaccines (16,792 per 1M people) and 47,400 Moderna vaccines (4,279 per 1M people) for the week of February 22, 2021.",
+                                                The default value of Percentage of 'Population Currently Infected with COVID-19' reflects Ontario’s situation on February 26, 2021."," ","As of February 26, 2021, Ontario has 298,569 cumulative cases, 6,944 deaths, and 15,029 cases reported in the last 14 days. Based on forecasts from the Government of Canada, Ontario is expected to administer 186,030 Pfizer vaccines (16,792 per 1M people) and 47,400 Moderna vaccines (4,279 per 1M people) for the week of February 22, 2021.",
                                                 h3("Strategy"), 
                                                 strong("High Population Density Vaccination Strategy:"), "Those who live in dense urban areas are first priority, suburban areas are second, and rural areas are third.", 
                                                 strong("Oldest to Youngest/Youngest to Oldest Vaccination Strategy:"), "The entire population is grouped and sorted via decade and vaccinations are administered oldest to youngest or youngest to oldest.", 
@@ -549,7 +547,8 @@ shinyServer(function(input, output) {
                                                 population and this provides equal weight to all infected individuals.",
                                                 " ","Anyone who is currently well, including those vaccinated, has the potential to be exposed and who is exposed is calculated randomly via a sample. To determine if this exposure results in an infection, a binomial distribution is run with probability equal 
                                                 to <i> 1 – administered vaccine efficacy </i>. If the individual has not been vaccinated, this value is 1. This current dashboard is built using Pfizer and Moderna vaccines which have a one dose efficacy of 52% and 80.2%, and a two-dose efficacy of 95% and 
-                                                94.1% respectfully, according to the BBC.", 
+                                                94.1% respectfully, according to the BBC.", " ", 
+                                                "If the user selects 2 doses, the second Pfizer dose is administered 3 weeks after the first, and Moderna's is administered four weeks after. In addition, for simplicity, it is to be assumed that the second dose does not impact the user-defined vaccinations per week.", 
                                                 " ",
                                                 strong("COVID-19 Deaths"), "Number of deaths per week is also calculated via a binomial distribution, where the probability of death is Ontario's actual deaths divided by the actual cumulative cases. Determining which individual dies is done via a sample of all active cases.", 
                                                 
